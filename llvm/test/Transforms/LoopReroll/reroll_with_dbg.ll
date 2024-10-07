@@ -38,7 +38,7 @@ for.body:                                         ; preds = %for.body.preheader,
 ;CHECK: store
 ;CHECK-NOT: load
 ;CHECK-NOT: store
-;CHECK: call void @llvm.dbg.value
+;CHECK: #dbg_value(i32 poison, !19, !DIExpression(DW_OP_plus_uconst, 4, DW_OP_stack_value), !24)
 ;CHECK: %indvar.next = add i32 %indvar, 1
 ;CHECK: icmp eq i32 %indvar
   %i.031 = phi i32 [ %add13, %for.body ], [ 0, %for.body.preheader ]
