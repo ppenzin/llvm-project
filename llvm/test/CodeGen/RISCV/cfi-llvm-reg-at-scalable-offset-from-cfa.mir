@@ -1,0 +1,4 @@
+name: func
+body: |
+  bb.0:
+    CFI_INSTRUCTION llvm_def_cfa_reg_scalable_offset $x2, 5, -42

@@ -15,6 +15,7 @@
 #define LLVM_MC_MCDWARF_H
 
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -504,6 +505,9 @@ public:
     OpRestoreState,
     OpOffset,
     OpLLVMDefAspaceCfa,
+    OpLLVMDefCfaRegScalableOffset,
+    OpLLVMRegAtScalableOffsetFromCfa,
+    OpLLVMRegOffset,
     OpDefCfaRegister,
     OpDefCfaOffset,
     OpDefCfa,
@@ -537,6 +541,16 @@ private:
       unsigned Register;
       unsigned Register2;
     } RR;
+    struct {
+      unsigned Register;
+      int64_t ScalableOffset;
+      int64_t FixedOffset;
+    } ROO;
+    struct {
+      unsigned Register;
+      unsigned Register2;
+      int64_t Offset;
+    } RRO;
     MCSymbol *CfiLabel;
   } U;
   OpType Operation;
@@ -567,6 +581,22 @@ private:
       : Label(L), Operation(Op), Loc(Loc) {
     assert(Op == OpLabel);
     U.CfiLabel = CfiLabel;
+  }
+
+  MCCFIInstruction(OpType Op, MCSymbol *L, unsigned R, int64_t ScalableOffset,
+                   int64_t FixedOffset, SMLoc Loc, StringRef Comment = "")
+      : Label(L), Operation(Op), Loc(Loc), Comment(Comment) {
+    assert(Operation == OpLLVMDefCfaRegScalableOffset ||
+           Operation == OpLLVMRegAtScalableOffsetFromCfa);
+    U.ROO = {R, ScalableOffset, FixedOffset};
+  }
+
+  MCCFIInstruction(OpType Op, MCSymbol *L, unsigned R, unsigned R2, int64_t O,
+                   SMLoc Loc, StringRef V, StringRef Comment = "")
+      : Label(L), Operation(Op), Loc(Loc), Values(V.begin(), V.end()),
+        Comment(Comment) {
+    assert(Op == OpLLVMRegOffset);
+    U.RRO = {R, R2, O};
   }
 
 public:
@@ -633,6 +663,44 @@ public:
                                          unsigned Register2, SMLoc Loc = {}) {
     return MCCFIInstruction(OpRegister, L, Register1, Register2, Loc);
   }
+
+  /// Create the new rule for calculating cfa: deref(Reg + ScalableOffset * x +
+  /// FixedOffset) where x is the runtime constant. This is a "pseudo" CFI
+  /// instruction - each target has to lower it into standard cfi directives.
+  static MCCFIInstruction
+  createLLVMDefCfaRegScalableOffset(MCSymbol *L, unsigned Reg,
+                                    int64_t ScalableOffset, int64_t FixedOffset,
+                                    SMLoc Loc = {}, StringRef Comment = "") {
+    return MCCFIInstruction(OpLLVMDefCfaRegScalableOffset, L, Reg,
+                            ScalableOffset, FixedOffset, Loc, Comment);
+  }
+
+  /// Create the new rule for calculating the previous (before the call) of
+  /// callee-saved register Reg: deref(cfa + ScalableOffset * x + FixedOffset)
+  /// where x is the runtime constant. This is a "pseudo" CFI instruction - each
+  /// target has to lower it into standard cfi directives.
+  static MCCFIInstruction createLLVMRegAtScalableOffsetFromCfa(
+      MCSymbol *L, unsigned Reg, int64_t ScalableOffset, int64_t FixedOffset,
+      SMLoc Loc = {}, StringRef Comment = "") {
+    return MCCFIInstruction(OpLLVMRegAtScalableOffsetFromCfa, L, Reg,
+                            ScalableOffset, FixedOffset, Loc, Comment);
+  }
+
+  /// This is a "pseudo CFI" instruction which generates the escape expression
+  /// deref(FrameReg + Offset) for the register Reg.
+  static MCCFIInstruction createLLVMRegOffset(MCSymbol *L, unsigned Reg,
+                                              unsigned FrameReg, int64_t Offset,
+                                              SMLoc Loc = {},
+                                              StringRef Comment = "") {
+    SmallString<64> CFAExpr;
+    createRegOffsetExpression(Reg, FrameReg, Offset, CFAExpr);
+    return MCCFIInstruction(OpLLVMRegOffset, L, Reg, FrameReg, Offset, Loc,
+                            CFAExpr, Comment);
+  }
+  /// Create the expression (FrameRegister + Offset) and write it to CFAExpr
+  static void createRegOffsetExpression(unsigned Reg, unsigned FrameReg,
+                                        int64_t Offset,
+                                        SmallString<64> &CFAExpr);
 
   /// .cfi_window_save SPARC register window is saved.
   static MCCFIInstruction createWindowSave(MCSymbol *L, SMLoc Loc = {}) {
@@ -715,6 +783,10 @@ public:
       return U.RR.Register;
     if (Operation == OpLLVMDefAspaceCfa)
       return U.RIA.Register;
+    if (Operation == OpLLVMRegAtScalableOffsetFromCfa)
+      return U.ROO.Register;
+    if (Operation == OpLLVMRegOffset)
+      return U.RRO.Register;
     assert(Operation == OpDefCfa || Operation == OpOffset ||
            Operation == OpRestore || Operation == OpUndefined ||
            Operation == OpSameValue || Operation == OpDefCfaRegister ||
@@ -723,8 +795,12 @@ public:
   }
 
   unsigned getRegister2() const {
-    assert(Operation == OpRegister);
-    return U.RR.Register2;
+    if (Operation == OpRegister)
+      return U.RR.Register2;
+    if (Operation == OpLLVMDefCfaRegScalableOffset)
+      return U.ROO.Register;
+    assert(Operation == OpLLVMRegOffset);
+    return U.RRO.Register2;
   }
 
   unsigned getAddressSpace() const {
@@ -735,11 +811,25 @@ public:
   int64_t getOffset() const {
     if (Operation == OpLLVMDefAspaceCfa)
       return U.RIA.Offset;
+    if (Operation == OpLLVMRegOffset)
+      return U.RRO.Offset;
     assert(Operation == OpDefCfa || Operation == OpOffset ||
            Operation == OpRelOffset || Operation == OpDefCfaOffset ||
            Operation == OpAdjustCfaOffset || Operation == OpGnuArgsSize ||
            Operation == OpValOffset);
     return U.RI.Offset;
+  }
+
+  int64_t getScalableOffset() const {
+    assert(Operation == OpLLVMDefCfaRegScalableOffset ||
+           Operation == OpLLVMRegAtScalableOffsetFromCfa);
+    return U.ROO.ScalableOffset;
+  }
+
+  int64_t getFixedOffset() const {
+    assert(Operation == OpLLVMDefCfaRegScalableOffset ||
+           Operation == OpLLVMRegAtScalableOffsetFromCfa);
+    return U.ROO.FixedOffset;
   }
 
   MCSymbol *getCfiLabel() const {
@@ -748,7 +838,7 @@ public:
   }
 
   StringRef getValues() const {
-    assert(Operation == OpEscape);
+    assert(Operation == OpEscape || Operation == OpLLVMRegOffset);
     return StringRef(&Values[0], Values.size());
   }
 

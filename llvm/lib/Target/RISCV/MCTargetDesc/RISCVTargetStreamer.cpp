@@ -13,9 +13,12 @@
 #include "RISCVTargetStreamer.h"
 #include "RISCVBaseInfo.h"
 #include "RISCVMCTargetDesc.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FormattedStream.h"
+#include "llvm/Support/LEB128.h"
 #include "llvm/Support/RISCVAttributes.h"
 #include "llvm/TargetParser/RISCVISAInfo.h"
 
@@ -28,10 +31,112 @@ static cl::opt<bool> RiscvAbiAttr(
     cl::desc("Enable emitting RISC-V ELF attributes for ABI features"),
     cl::Hidden);
 
-RISCVTargetStreamer::RISCVTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
+// void createRegOffsetExpression(unsigned Reg,
+//                                                  unsigned FrameReg,
+//                                                  int64_t Offset,
+//                                                  SmallString<64> &CFAExpr) {
+//   // Below all the comments about specific CFI instructions and opcodes are
+//   // taken directly from DWARF Standard version 5.
+//   //
+//   // Encode the expression: (Offset + FrameReg) into Expr:
+//   SmallString<64> Expr;
+//   uint8_t Buffer[16];
+//   // Encode  offset:
+//   Expr.push_back(dwarf::DW_OP_consts);
+//   // The single operand of the DW_OP_consts operation provides a signed
+//   // LEB128 integer constant
+//   Expr.append(Buffer, Buffer + encodeSLEB128(Offset, Buffer));
+//   // Encode  FrameReg:
+//   Expr.push_back((uint8_t)dwarf::DW_OP_bregx);
+//   // The DW_OP_bregx operation provides the sum of two values specified by
+//   its
+//   // two operands. The first operand is a register number which is specified
+//   by
+//   // an unsigned LEB128 number. The second operand is a signed LEB128 offset.
+//   Expr.append(Buffer, Buffer + encodeULEB128(FrameReg, Buffer));
+//   Expr.push_back(0);
+//   // The DW_OP_plus operation pops the top two stack entries, adds them
+//   // together, and pushes the result.
+//   Expr.push_back((uint8_t)dwarf::DW_OP_plus);
+//   // Now pass the encoded Expr to DW_CFA_expression:
+//   //
+//   // The DW_CFA_expression instruction takes two operands: an unsigned
+//   // LEB128 value representing a register number, and a DW_FORM_block value
+//   // representing a DWARF expression
+//   CFAExpr.push_back(dwarf::DW_CFA_expression);
+//   CFAExpr.append(Buffer, Buffer + encodeULEB128(Reg, Buffer));
+//   // DW_FORM_block value is unsigned LEB128 length followed by the number of
+//   // bytes specified by the length
+//   CFAExpr.append(Buffer, Buffer + encodeULEB128(Expr.size(), Buffer));
+//   CFAExpr.append(Expr.str());
+//   return;
+// }
+
+static void appendScalableVectorExpression(const MCRegisterInfo &MRI,
+                                           SmallVectorImpl<char> &Expr,
+                                           int FixedOffset,
+                                           int ScalableOffset) {
+  unsigned DwarfVLenB = MRI.getDwarfRegNum(RISCV::VLENB, true);
+  uint8_t Buffer[16];
+  if (FixedOffset) {
+    Expr.push_back(dwarf::DW_OP_consts);
+    Expr.append(Buffer, Buffer + encodeSLEB128(FixedOffset, Buffer));
+    Expr.push_back((uint8_t)dwarf::DW_OP_plus);
+  }
+
+  Expr.push_back((uint8_t)dwarf::DW_OP_consts);
+  Expr.append(Buffer, Buffer + encodeSLEB128(ScalableOffset, Buffer));
+
+  Expr.push_back((uint8_t)dwarf::DW_OP_bregx);
+  Expr.append(Buffer, Buffer + encodeULEB128(DwarfVLenB, Buffer));
+  Expr.push_back(0);
+
+  Expr.push_back((uint8_t)dwarf::DW_OP_mul);
+  Expr.push_back((uint8_t)dwarf::DW_OP_plus);
+}
+
+RISCVTargetStreamer::RISCVTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {
+  MRI = getContext().getRegisterInfo();
+}
 
 void RISCVTargetStreamer::finish() { finishAttributeSection(); }
 void RISCVTargetStreamer::reset() {}
+
+void RISCVTargetStreamer::emitCFILLVMDefCfaRegScalableOffset(
+    int64_t Register, int64_t ScalableOffset, int64_t FixedOffset, SMLoc Loc) {
+  SmallString<64> Expr;
+  // Build up the expression (Reg + FixedOffset + ScalableOffset * VLENB).
+  unsigned DwarfReg = MRI->getDwarfRegNum(Register, true);
+  Expr.push_back((uint8_t)(dwarf::DW_OP_breg0 + DwarfReg));
+  Expr.push_back(0);
+
+  appendScalableVectorExpression(*MRI, Expr, FixedOffset, ScalableOffset);
+
+  SmallString<64> DefCfaExpr;
+  uint8_t Buffer[16];
+  DefCfaExpr.push_back(dwarf::DW_CFA_def_cfa_expression);
+  DefCfaExpr.append(Buffer, Buffer + encodeULEB128(Expr.size(), Buffer));
+  DefCfaExpr.append(Expr.str());
+
+  Streamer.emitCFIEscape(DefCfaExpr.str(), SMLoc());
+}
+
+void RISCVTargetStreamer::emitCFILLVMRegAtScalableOffsetFromCfa(
+    int64_t Register, int64_t ScalableOffset, int64_t FixedOffset, SMLoc Loc) {
+  SmallString<64> Expr;
+  unsigned DwarfReg = MRI->getDwarfRegNum(Register, true);
+  // Build up the expression (FixedOffset + ScalableOffset * VLENB).
+  appendScalableVectorExpression(*MRI, Expr, FixedOffset, ScalableOffset);
+
+  SmallString<64> DefCfaExpr;
+  uint8_t Buffer[16];
+  DefCfaExpr.push_back(dwarf::DW_CFA_expression);
+  DefCfaExpr.append(Buffer, Buffer + encodeULEB128(DwarfReg, Buffer));
+  DefCfaExpr.append(Buffer, Buffer + encodeULEB128(Expr.size(), Buffer));
+  DefCfaExpr.append(Expr.str());
+
+  Streamer.emitCFIEscape(DefCfaExpr.str(), SMLoc());
+}
 
 void RISCVTargetStreamer::emitDirectiveOptionArch(
     ArrayRef<RISCVOptionArchArg> Args) {}

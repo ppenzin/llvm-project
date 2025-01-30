@@ -16,6 +16,7 @@
 namespace llvm {
 
 class formatted_raw_ostream;
+class MCRegisterInfo;
 
 enum class RISCVOptionArchArgType {
   Full,
@@ -35,11 +36,21 @@ class RISCVTargetStreamer : public MCTargetStreamer {
   RISCVABI::ABI TargetABI = RISCVABI::ABI_Unknown;
   bool HasRVC = false;
   bool HasTSO = false;
+  const MCRegisterInfo *MRI = nullptr;
 
 public:
   RISCVTargetStreamer(MCStreamer &S);
   void finish() override;
   virtual void reset();
+
+  void emitCFILLVMDefCfaRegScalableOffset(int64_t Register,
+                                          int64_t ScalableOffset,
+                                          int64_t FixedOffset,
+                                          SMLoc Loc) override;
+  void emitCFILLVMRegAtScalableOffsetFromCfa(int64_t Register,
+                                             int64_t ScalableOffset,
+                                             int64_t FixedOffset,
+                                             SMLoc Loc) override;
 
   virtual void emitDirectiveOptionArch(ArrayRef<RISCVOptionArchArg> Args);
   virtual void emitDirectiveOptionExact();
