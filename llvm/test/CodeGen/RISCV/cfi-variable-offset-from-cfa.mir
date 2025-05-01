@@ -44,7 +44,8 @@ body:             |
   ; CHECK-NEXT: bb.2:
   ; CHECK-NEXT:   successors: %bb.1(0x80000000)
   ; CHECK-NEXT: {{  $}}
-  ; CHECK-NEXT:   CFI_INSTRUCTION def_cfa_offset 16
+  ; CHECK-NEXT:   CFI_INSTRUCTION llvm_def_cfa_reg_scalable_offset $x2, 1, 16
+  ; CHECK-NEXT:   CFI_INSTRUCTION llvm_reg_at_scalable_offset_from_cfa $v1, -1, 0
   ; CHECK-NEXT:   $x10 = ADDI $x2, 16
   ; CHECK-NEXT:   $v1 = frame-destroy VL1RE8_V killed $x10 :: (load (<vscale x 1 x s64>) from %stack.0)
   ; CHECK-NEXT:   $x10 = frame-destroy PseudoReadVLENB
@@ -63,10 +64,10 @@ body:             |
   ; CHECK-NEXT:   frame-setup CFI_INSTRUCTION def_cfa_offset 16
   ; CHECK-NEXT:   $x12 = frame-setup PseudoReadVLENB
   ; CHECK-NEXT:   $x2 = frame-setup SUB $x2, killed $x12
-  ; CHECK-NEXT:   frame-setup CFI_INSTRUCTION escape 0x0f, 0x0d, 0x72, 0x00, 0x11, 0x10, 0x22, 0x11, 0x01, 0x92, 0xa2, 0x38, 0x00, 0x1e, 0x22
+  ; CHECK-NEXT:   frame-setup CFI_INSTRUCTION llvm_def_cfa_reg_scalable_offset $x2, 1, 16
   ; CHECK-NEXT:   $x12 = ADDI $x2, 16
   ; CHECK-NEXT:   frame-setup VS1R_V killed $v1, killed $x12 :: (store (<vscale x 1 x s64>) into %stack.0)
-  ; CHECK-NEXT:   frame-setup CFI_INSTRUCTION escape 0x10, 0x61, 0x08, 0x11, 0x7f, 0x92, 0xa2, 0x38, 0x00, 0x1e, 0x22
+  ; CHECK-NEXT:   frame-setup CFI_INSTRUCTION llvm_reg_at_scalable_offset_from_cfa $v1, -1, 0
   ; CHECK-NEXT:   dead $x0 = PseudoVSETIVLI 4, 208 /* e32, m1, ta, ma */, implicit-def $vl, implicit-def $vtype
   ; CHECK-NEXT:   renamable $v1 = PseudoVLE32_V_M1 undef renamable $v1, killed renamable $x10, 4, 5 /* e32 */, 2 /* tu, ma */, implicit $vl, implicit $vtype
   ; CHECK-NEXT:   PseudoVSE32_V_M1 killed renamable $v1, killed renamable $x11, 4, 5 /* e32 */, implicit $vl, implicit $vtype
