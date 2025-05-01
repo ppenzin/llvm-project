@@ -54,6 +54,8 @@ bool TargetSubtargetInfo::enablePostRAMachineScheduler() const {
   return enableMachineScheduler() && enablePostRAScheduler();
 }
 
+bool TargetSubtargetInfo::doCSRSavesInRA() const { return false; }
+
 bool TargetSubtargetInfo::useAA() const {
   return false;
 }

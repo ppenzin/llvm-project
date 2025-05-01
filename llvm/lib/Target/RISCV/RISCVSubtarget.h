@@ -337,6 +337,8 @@ public:
 
   bool useDFAforSMS() const override { return false; }
 
+  bool doCSRSavesInRA() const override;
+
   bool useAA() const override;
 
   unsigned getCacheLineSize() const override {

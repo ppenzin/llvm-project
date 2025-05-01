@@ -71,6 +71,11 @@ static cl::opt<bool> UseCCMovInsn("use-riscv-ccmov",
                                   cl::desc("Use 'mips.ccmov' instruction"),
                                   cl::init(true), cl::Hidden);
 
+static cl::opt<bool> RISCVEnableSaveCSRByRA(
+    "riscv-enable-save-csr-in-ra",
+    cl::desc("Let register alloctor do csr saves/restores"), cl::init(false),
+    cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -206,6 +211,8 @@ bool RISCVSubtarget::enableSubRegLiveness() const { return true; }
 bool RISCVSubtarget::enableMachinePipeliner() const {
   return getSchedModel().hasInstrSchedModel();
 }
+
+bool RISCVSubtarget::doCSRSavesInRA() const { return RISCVEnableSaveCSRByRA; }
 
   /// Enable use of alias analysis during code generation (during MI
   /// scheduling, DAGCombine, etc.).

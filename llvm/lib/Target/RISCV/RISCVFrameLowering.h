@@ -34,6 +34,8 @@ public:
   StackOffset getFrameIndexReference(const MachineFunction &MF, int FI,
                                      Register &FrameReg) const override;
 
+  void determineMustCalleeSaves(MachineFunction &MF,
+                                BitVector &SavedRegs) const;
   void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
                             RegScavenger *RS) const override;
 
@@ -71,6 +73,9 @@ public:
   bool canUseAsEpilogue(const MachineBasicBlock &MBB) const override;
 
   bool enableShrinkWrapping(const MachineFunction &MF) const override;
+
+  void emitCFIsEarly(MachineFunction &MF,
+                     ReachingDefAnalysis *RDA) const override;
 
   bool isSupportedStackID(TargetStackID::Value ID) const override;
   TargetStackID::Value getStackIDForScalableVectors() const override;
