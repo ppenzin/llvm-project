@@ -1322,6 +1322,14 @@ bool RISCVInstrInfo::isFromLoadImm(const MachineRegisterInfo &MRI,
   return Reg.isVirtual() && isLoadImm(MRI.getVRegDef(Reg), Imm);
 }
 
+bool RISCVInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
+  if (MI.getOpcode() == RISCV::UnreachableRET) {
+    MI.eraseFromParent();
+    return true;
+  }
+  return false;
+}
+
 bool RISCVInstrInfo::optimizeCondBranch(MachineInstr &MI) const {
   MachineBasicBlock *MBB = MI.getParent();
   MachineRegisterInfo &MRI = MBB->getParent()->getRegInfo();

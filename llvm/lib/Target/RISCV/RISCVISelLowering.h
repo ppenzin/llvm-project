@@ -1100,6 +1100,8 @@ private:
 
   std::pair<const TargetRegisterClass *, uint8_t>
   findRepresentativeClass(const TargetRegisterInfo *TRI, MVT VT) const override;
+
+  void finalizeLowering(MachineFunction &MF) const override;
 };
 
 namespace RISCVVIntrinsicsTable {
