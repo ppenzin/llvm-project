@@ -321,6 +321,8 @@ public:
   static bool isFromLoadImm(const MachineRegisterInfo &MRI,
                             const MachineOperand &Op, int64_t &Imm);
 
+  bool expandPostRAPseudo(MachineInstr &MI) const override;
+
 protected:
   const RISCVSubtarget &STI;
 

@@ -4982,3 +4982,11 @@ bool RISCVInstrInfo::isHighLatencyDef(int Opc) const {
     return true;
   }
 }
+
+bool RISCVInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
+  if (MI.getOpcode() == RISCV::UnreachableRET) {
+    MI.eraseFromParent();
+    return true;
+  }
+  return false;
+}
