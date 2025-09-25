@@ -2061,9 +2061,9 @@ bool HexagonFrameLowering::expandSpillMacros(MachineFunction &MF,
   return Changed;
 }
 
-void HexagonFrameLowering::determineCalleeSaves(MachineFunction &MF,
-                                                BitVector &SavedRegs,
-                                                RegScavenger *RS) const {
+void HexagonFrameLowering::determinePrologCalleeSaves(MachineFunction &MF,
+                                                      BitVector &SavedRegs,
+                                                      RegScavenger *RS) const {
   auto &HRI = *MF.getSubtarget<HexagonSubtarget>().getRegisterInfo();
 
   SavedRegs.resize(HRI.getNumRegs());
@@ -2114,7 +2114,7 @@ void HexagonFrameLowering::determineCalleeSaves(MachineFunction &MF,
     }
   }
 
-  TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
+  TargetFrameLowering::determinePrologCalleeSaves(MF, SavedRegs, RS);
 }
 
 Register HexagonFrameLowering::findPhysReg(MachineFunction &MF,
