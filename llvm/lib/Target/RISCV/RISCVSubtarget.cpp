@@ -69,6 +69,10 @@ static cl::opt<bool> UseCCMovInsn("use-riscv-ccmov",
                                   cl::desc("Use 'mips.ccmov' instruction"),
                                   cl::init(true), cl::Hidden);
 
+static cl::opt<bool> SaveCSREarly("riscv-save-csrs-early",
+                                  cl::desc("Save CSRs early"),
+                                  cl::init(false), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -252,4 +256,8 @@ bool RISCVSubtarget::useLoadStorePairs() const {
 
 bool RISCVSubtarget::useCCMovInsn() const {
   return UseCCMovInsn && HasVendorXMIPSCMov;
+}
+
+bool RISCVSubtarget::savesCSRsEarly() const {
+  return SaveCSREarly;
 }
