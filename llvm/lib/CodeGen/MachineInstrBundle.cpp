@@ -136,12 +136,20 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
   SmallSetVector<Register, 8> ExternUses;
   SmallSet<Register, 8> KilledUseSet;
   SmallSet<Register, 8> UndefUseSet;
+  SmallSet<int, 8> FIUses;
   for (auto MII = FirstMI; MII != LastMI; ++MII) {
     // Debug instructions have no effects to track.
     if (MII->isDebugInstr())
       continue;
 
-    for (MachineOperand &MO : MII->all_uses()) {
+    for (MachineOperand &MO : MII->operands()) {
+      if (MO.isFI()) {
+        FIUses.insert(MO.getIndex());
+        continue;
+      }
+
+      if (!MO.isReg()  || !MO.isUse())
+        continue;
       Register Reg = MO.getReg();
       if (!Reg)
         continue;
@@ -205,6 +213,9 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
     MIB.addReg(Reg, getKillRegState(isKill) | getUndefRegState(isUndef) |
                getImplRegState(true));
   }
+
+  for (int FI : FIUses)
+    MIB.addFrameIndex(FI);
 }
 
 /// finalizeBundle - Same functionality as the previous finalizeBundle except
