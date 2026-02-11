@@ -1434,8 +1434,7 @@ void LoopReroll::DAGRootTracker::replace(const SCEV *BackedgeTakenCount) {
 
   { // Limit the lifetime of SCEVExpander.
     BranchInst *BI = cast<BranchInst>(Header->getTerminator());
-    const DataLayout &DL = Header->getModule()->getDataLayout();
-    SCEVExpander Expander(*SE, DL, "reroll");
+    SCEVExpander Expander(*SE, "reroll");
     auto Zero = SE->getZero(BackedgeTakenCount->getType());
     auto One = SE->getOne(BackedgeTakenCount->getType());
     auto NewIVSCEV = SE->getAddRecExpr(Zero, One, L, SCEV::FlagAnyWrap);
@@ -1472,8 +1471,7 @@ void LoopReroll::DAGRootTracker::replaceIV(DAGRootSet &DRS,
       SE->getAddRecExpr(Start, IncrExpr, L, SCEV::FlagAnyWrap);
 
   { // Limit the lifetime of SCEVExpander.
-    const DataLayout &DL = Header->getModule()->getDataLayout();
-    SCEVExpander Expander(*SE, DL, "reroll");
+    SCEVExpander Expander(*SE, "reroll");
     Value *NewIV = Expander.expandCodeFor(NewIVSCEV, Inst->getType(),
                                           Header->getFirstNonPHIOrDbg());
 
