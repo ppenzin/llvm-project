@@ -2,9 +2,9 @@
 ; RUN: opt -S -passes=loop-reroll   %s | FileCheck %s
 target triple = "aarch64--linux-gnu"
 
-define void @rerollable1(ptr nocapture %a) {
+define void @rerollable1(ptr captures(none) %a) {
 ; CHECK-LABEL: define void @rerollable1
-; CHECK-SAME: (ptr nocapture [[A:%.*]]) {
+; CHECK-SAME: (ptr captures(none) [[A:%.*]]) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
@@ -61,9 +61,9 @@ exit:
   ret void
 }
 
-define void @unrerollable1(ptr nocapture %a) {
+define void @unrerollable1(ptr captures(none) %a) {
 ; CHECK-LABEL: define void @unrerollable1
-; CHECK-SAME: (ptr nocapture [[A:%.*]]) {
+; CHECK-SAME: (ptr captures(none) [[A:%.*]]) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
@@ -126,9 +126,9 @@ exit:
   ret void
 }
 
-define void @unrerollable2(ptr nocapture %a) {
+define void @unrerollable2(ptr captures(none) %a) {
 ; CHECK-LABEL: define void @unrerollable2
-; CHECK-SAME: (ptr nocapture [[A:%.*]]) {
+; CHECK-SAME: (ptr captures(none) [[A:%.*]]) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:

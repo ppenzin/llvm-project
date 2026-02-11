@@ -12,9 +12,9 @@ target triple = "x86_64-unknown-linux-gnu"
 ;   }
 ; }
 
-define void @bar(ptr nocapture readnone %x) #0 {
+define void @bar(ptr captures(none) readnone %x) #0 {
 ; CHECK-LABEL: define void @bar
-; CHECK-SAME: (ptr nocapture readnone [[X:%.*]]) #[[ATTR0:[0-9]+]] {
+; CHECK-SAME: (ptr readnone captures(none) [[X:%.*]]) #[[ATTR0:[0-9]+]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -55,9 +55,9 @@ declare i32 @foo(i32)
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @hi1(ptr nocapture %x) #0 {
+define void @hi1(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @hi1
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -106,9 +106,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @hi2(ptr nocapture %x) #0 {
+define void @hi2(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @hi2
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -158,9 +158,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @goo(float %alpha, ptr nocapture %a, ptr nocapture readonly %b) #0 {
+define void @goo(float %alpha, ptr captures(none) %a, ptr captures(none) readonly %b) #0 {
 ; CHECK-LABEL: define void @goo
-; CHECK-SAME: (float [[ALPHA:%.*]], ptr nocapture [[A:%.*]], ptr nocapture readonly [[B:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (float [[ALPHA:%.*]], ptr captures(none) [[A:%.*]], ptr readonly captures(none) [[B:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -243,9 +243,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @hoo(float %alpha, ptr nocapture %a, ptr nocapture readonly %b, ptr nocapture readonly %ip) #0 {
+define void @hoo(float %alpha, ptr captures(none) %a, ptr captures(none) readonly %b, ptr captures(none) readonly %ip) #0 {
 ; CHECK-LABEL: define void @hoo
-; CHECK-SAME: (float [[ALPHA:%.*]], ptr nocapture [[A:%.*]], ptr nocapture readonly [[B:%.*]], ptr nocapture readonly [[IP:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (float [[ALPHA:%.*]], ptr captures(none) [[A:%.*]], ptr readonly captures(none) [[B:%.*]], ptr readonly captures(none) [[IP:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -351,9 +351,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @multi1(ptr nocapture %x) #0 {
+define void @multi1(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @multi1
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[CALL:%.*]] = tail call i32 @foo(i32 0) #[[ATTR1]]
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
@@ -417,9 +417,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @multi2(ptr nocapture %x) #0 {
+define void @multi2(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @multi2
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[CALL:%.*]] = tail call i32 @foo(i32 0) #[[ATTR1]]
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
@@ -482,9 +482,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @multi3(ptr nocapture %x) #0 {
+define void @multi3(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @multi3
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[CALL:%.*]] = tail call i32 @foo(i32 0) #[[ATTR1]]
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
@@ -535,9 +535,9 @@ for.end:                                          ; preds = %for.body
 ; }
 
 ; Function Attrs: nounwind uwtable
-define void @bar2(ptr nocapture readnone %x, i32 %y, i32 %z) #0 {
+define void @bar2(ptr captures(none) readnone %x, i32 %y, i32 %z) #0 {
 ; CHECK-LABEL: define void @bar2
-; CHECK-SAME: (ptr nocapture readnone [[X:%.*]], i32 [[Y:%.*]], i32 [[Z:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr readnone captures(none) [[X:%.*]], i32 [[Y:%.*]], i32 [[Z:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
@@ -587,9 +587,9 @@ for.end:                                          ; preds = %for.body
 %struct.s = type { i32, i32 }
 
 ; Function Attrs: nounwind uwtable
-define void @gep1(ptr nocapture %x) #0 {
+define void @gep1(ptr captures(none) %x) #0 {
 ; CHECK-LABEL: define void @gep1
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[CALL:%.*]] = tail call i32 @foo(i32 0) #[[ATTR1]]
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
@@ -634,9 +634,9 @@ for.end:                                          ; preds = %for.body
   ret void
 }
 
-define void @gep-indexing(ptr nocapture %x) {
+define void @gep-indexing(ptr captures(none) %x) {
 ; CHECK-LABEL: define void @gep-indexing
-; CHECK-SAME: (ptr nocapture [[X:%.*]]) {
+; CHECK-SAME: (ptr captures(none) [[X:%.*]]) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[CALL:%.*]] = tail call i32 @foo(i32 0) #[[ATTR1]]
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
@@ -899,9 +899,9 @@ bb19:                                             ; preds = %bb3
   ret void
 }
 
-define void @bad_step(ptr nocapture readnone %x) #0 {
+define void @bad_step(ptr captures(none) readnone %x) #0 {
 ; CHECK-LABEL: define void @bad_step
-; CHECK-SAME: (ptr nocapture readnone [[X:%.*]]) #[[ATTR0]] {
+; CHECK-SAME: (ptr readnone captures(none) [[X:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
