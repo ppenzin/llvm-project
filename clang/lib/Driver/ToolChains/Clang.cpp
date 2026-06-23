@@ -7175,6 +7175,8 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fwritable_strings);
   Args.AddLastArg(CmdArgs, options::OPT_funroll_loops,
                   options::OPT_fno_unroll_loops);
+  Args.AddLastArg(CmdArgs, options::OPT_freroll_loops,
+                  options::OPT_fno_reroll_loops);
   Args.AddLastArg(CmdArgs, options::OPT_floop_interchange,
                   options::OPT_fno_loop_interchange);
   Args.addOptInFlag(CmdArgs, options::OPT_fexperimental_loop_fusion,
