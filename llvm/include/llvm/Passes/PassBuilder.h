@@ -58,6 +58,10 @@ public:
   /// Tuning option to enable/disable loop unrolling. Its default value is true.
   bool LoopUnrolling;
 
+  /// Tuning option to enable/disable loop rerolling. Its default value is
+  /// false.
+  bool LoopRerolling;
+
   /// Tuning option to enable/disable loop interchange. Its default value is
   /// false.
   bool LoopInterchange;
