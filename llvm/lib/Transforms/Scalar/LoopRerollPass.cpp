@@ -456,7 +456,7 @@ namespace {
     // Check if it is a compare-like instruction whose user is a branch
     bool isCompareUsedByBranch(Instruction *I) {
       auto *TI = I->getParent()->getTerminator();
-      if (!isa<BranchInst>(TI) || !isa<CmpInst>(I))
+      if (!isa<CondBrInst>(TI) || !isa<CmpInst>(I))
         return false;
       return I->hasOneUse() && TI->getOperand(0) == I;
     };
@@ -1166,8 +1166,8 @@ bool LoopReroll::DAGRootTracker::validate(ReductionTracker &Reductions) {
         }
         // Is UUser a compare instruction?
         if (UU->hasOneUse()) {
-          Instruction *BI = dyn_cast<BranchInst>(*UUser->user_begin());
-          if (BI == cast<BranchInst>(Header->getTerminator()))
+          Instruction *BI = dyn_cast<CondBrInst>(*UUser->user_begin());
+          if (BI == cast<CondBrInst>(Header->getTerminator()))
             Uses[BI].set(IL_All);
         }
       }
@@ -1433,7 +1433,7 @@ void LoopReroll::DAGRootTracker::replace(const SCEV *BackedgeTakenCount) {
     replaceIV(RootSets[i], StartExprs[i], IncrExprs[i]);
 
   { // Limit the lifetime of SCEVExpander.
-    BranchInst *BI = cast<BranchInst>(Header->getTerminator());
+    CondBrInst *BI = cast<CondBrInst>(Header->getTerminator());
     SCEVExpander Expander(*SE, "reroll");
     auto Zero = SE->getZero(BackedgeTakenCount->getType());
     auto One = SE->getOne(BackedgeTakenCount->getType());
@@ -1450,7 +1450,8 @@ void LoopReroll::DAGRootTracker::replace(const SCEV *BackedgeTakenCount) {
         Expander.expandCodeFor(ScaledBECount, BackedgeTakenCount->getType(),
                                Header->getFirstNonPHIOrDbg());
     Value *Cond =
-        new ICmpInst(BI, CmpInst::ICMP_EQ, NewIV, TakenCount, "exitcond");
+        new ICmpInst(BI->getIterator(), CmpInst::ICMP_EQ, NewIV, TakenCount,
+                     "exitcond");
     BI->setCondition(Cond);
 
     if (BI->getSuccessor(1) != Header)
